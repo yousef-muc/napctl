@@ -66,6 +66,31 @@ sudo curl -fsSL https://yousef-muc.github.io/napctl/rpm/napctl.repo -o /etc/yum.
 sudo dnf install napctl
 ```
 
+The APT repository metadata is signed. The RPM repository metadata and RPM
+packages are signed with the published Nap Linux repository key.
+
+## Updates
+
+After installing from Homebrew:
+
+```sh
+brew update
+brew upgrade napctl
+```
+
+After installing from the APT repository:
+
+```sh
+sudo apt update
+sudo apt upgrade napctl
+```
+
+After installing from the DNF/YUM repository:
+
+```sh
+sudo dnf upgrade napctl
+```
+
 The Linux package installs:
 
 ```text

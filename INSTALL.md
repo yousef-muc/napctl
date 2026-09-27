@@ -58,6 +58,35 @@ Or use the one-line installer:
 curl -fsSL https://yousef-muc.github.io/napctl/install.sh | sh
 ```
 
+The RPM repository metadata and the RPM packages are both signed with the Nap
+Linux repository key published at:
+
+```text
+https://yousef-muc.github.io/napctl/rpm/RPM-GPG-KEY-napctl
+```
+
+## Updates
+
+Homebrew:
+
+```sh
+brew update
+brew upgrade napctl
+```
+
+APT:
+
+```sh
+sudo apt update
+sudo apt upgrade napctl
+```
+
+DNF/YUM:
+
+```sh
+sudo dnf upgrade napctl
+```
+
 ## Agent Hosts
 
 Run `napd` only on machines that should manage Docker workloads.
