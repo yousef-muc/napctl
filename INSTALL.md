@@ -27,30 +27,35 @@ brew services start napctl
 
 ## Debian and Ubuntu
 
-Download the matching `.deb` package from the release page:
+Configure the signed APT repository:
 
 ```sh
-sudo apt install ./napctl_VERSION_linux_amd64.deb
+sudo install -d -m 0755 /usr/share/keyrings
+curl -fsSL https://yousef-muc.github.io/napctl/apt/gpg/napctl.gpg | sudo tee /usr/share/keyrings/napctl-archive-keyring.gpg >/dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/napctl-archive-keyring.gpg] https://yousef-muc.github.io/napctl/apt stable main" | sudo tee /etc/apt/sources.list.d/napctl.list >/dev/null
+sudo apt update
+sudo apt install napctl
 ```
 
-On ARM64 Linux:
+Or use the one-line installer:
 
 ```sh
-sudo apt install ./napctl_VERSION_linux_arm64.deb
+curl -fsSL https://yousef-muc.github.io/napctl/install.sh | sh
 ```
 
 ## RPM-Based Linux
 
-Download the matching `.rpm` package from the release page:
+Configure the DNF/YUM repository:
 
 ```sh
-sudo dnf install ./napctl_VERSION_linux_amd64.rpm
+sudo curl -fsSL https://yousef-muc.github.io/napctl/rpm/napctl.repo -o /etc/yum.repos.d/napctl.repo
+sudo dnf install napctl
 ```
 
-On ARM64 Linux:
+Or use the one-line installer:
 
 ```sh
-sudo dnf install ./napctl_VERSION_linux_arm64.rpm
+curl -fsSL https://yousef-muc.github.io/napctl/install.sh | sh
 ```
 
 ## Agent Hosts

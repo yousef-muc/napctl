@@ -43,16 +43,27 @@ $(brew --prefix)/etc/nap/nap.yaml
 
 ## Linux
 
-Download the `.deb` or `.rpm` package from the latest GitHub release:
+Install from the Linux package repository:
 
 ```sh
-sudo apt install ./napctl_VERSION_linux_amd64.deb
+curl -fsSL https://yousef-muc.github.io/napctl/install.sh | sh
 ```
 
-or:
+Debian and Ubuntu:
 
 ```sh
-sudo dnf install ./napctl_VERSION_linux_amd64.rpm
+sudo install -d -m 0755 /usr/share/keyrings
+curl -fsSL https://yousef-muc.github.io/napctl/apt/gpg/napctl.gpg | sudo tee /usr/share/keyrings/napctl-archive-keyring.gpg >/dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/napctl-archive-keyring.gpg] https://yousef-muc.github.io/napctl/apt stable main" | sudo tee /etc/apt/sources.list.d/napctl.list >/dev/null
+sudo apt update
+sudo apt install napctl
+```
+
+Fedora, RHEL, CentOS, and compatible distributions:
+
+```sh
+sudo curl -fsSL https://yousef-muc.github.io/napctl/rpm/napctl.repo -o /etc/yum.repos.d/napctl.repo
+sudo dnf install napctl
 ```
 
 The Linux package installs:
