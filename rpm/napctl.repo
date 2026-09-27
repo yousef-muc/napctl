@@ -1,0 +1,7 @@
+[napctl]
+name=Nap packages
+baseurl=https://yousef-muc.github.io/napctl/rpm/$basearch
+enabled=1
+repo_gpgcheck=1
+gpgcheck=0
+gpgkey=https://yousef-muc.github.io/napctl/rpm/RPM-GPG-KEY-napctl

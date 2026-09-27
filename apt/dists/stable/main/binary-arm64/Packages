@@ -1,0 +1,15 @@
+Package: napctl
+Version: 0.1.2
+Architecture: arm64
+Maintainer: Nap maintainers
+Installed-Size: 16425
+Filename: pool/main/n/napctl/napctl_0.1.2_linux_arm64.deb
+Size: 6662760
+MD5sum: 94521a7305d94fb366465e45fea9c99f
+SHA1: bb2106123cdcd8a3b83d3e2c5b3f626363b994a0
+SHA256: 48fd79c89143aac00ef3a1606c8f553ce9b2e2e0f63d5c7699f89a30231ead34
+Section: utils
+Priority: optional
+Homepage: https://github.com/yousef-muc/napctl
+Description: Local and edge Docker compute orchestrator with wake-on-request
+
