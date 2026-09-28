@@ -724,7 +724,7 @@ gateway is exposed, and how `napctl` reaches each node.
 
 ### 1. 🏠 Single Machine Without Reverse Proxy
 
-![Local gateway placeholder](./artifacts/general/img/single.png)
+![Local gateway placeholder](./artifacts/general/img/single2.png)
 
 Run both `napctl` and `napd` on one machine. Docker containers, the Nap gateway,
 and the control socket all live on the same host.
