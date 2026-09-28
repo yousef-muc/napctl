@@ -1,6 +1,6 @@
 # napctl - Container Compute Orchestration
 
-![Hero Image](./artifacts/general/img/hero.png)
+![Hero Image](./artifacts/general/img/hero2.png)
 
 [![Release](https://img.shields.io/github/v/release/yousef-muc/napctl?label=release)](https://github.com/yousef-muc/napctl/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -453,6 +453,8 @@ napctl node token unset gpu-server
 ```
 
 ## 🌐 Reverse Proxy Examples
+![Reverse Prox](./artifacts/general/img/reverse-proxy.png)pro
+
 
 Put the public reverse proxy in front of the Nap gateway, not directly in front
 of the container port. The proxy must send a `Host` header that matches a
