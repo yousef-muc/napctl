@@ -1,13 +1,13 @@
 Package: napctl
-Version: 0.1.11
+Version: 0.1.12
 Architecture: amd64
 Maintainer: Nap maintainers
-Installed-Size: 17771
-Filename: pool/main/n/napctl/napctl_0.1.11_linux_amd64.deb
-Size: 7388398
-MD5sum: 0afcb603ca3ab6b8cd647505aa294ea5
-SHA1: 78afe9e0b76f88630c1d15bfe7dc329df2796ec1
-SHA256: 10d6006fbeadd5855618803e4898b5e2272a685be1d316c3266932f78d16fbae
+Installed-Size: 17775
+Filename: pool/main/n/napctl/napctl_0.1.12_linux_amd64.deb
+Size: 7387874
+MD5sum: 57e682df47cb87e8213dd3fc6e06dfc5
+SHA1: 487abc013e7726fb3cf3f2ead4ce54ded49c9ea7
+SHA256: 833db3e232b6d0f58f3483feb41d94e9ed41a27922eed89541d3b87196381b0e
 Section: utils
 Priority: optional
 Homepage: https://github.com/yousef-muc/napctl
