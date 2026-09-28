@@ -678,7 +678,7 @@ and `/` commands.
 
 ## 🧩 How napctl & napd work together
 
-![napd and napctl](./artifacts/general/img/reverse-proxy.png)
+![napd and napctl](./artifacts/general/img/napd.png)
 
 `napctl` is the operator interface. It can run as a classic CLI, a terminal UI,
 or a remote-control client. `napd` is the server-side agent. It runs on the host
