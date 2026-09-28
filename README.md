@@ -1,4 +1,4 @@
-# napctl - Docker Container Compute Orchestration
+# napctl - Container Compute Orchestration
 
 ![Hero Image](./artifacts/general/img/hero.png)
 
@@ -9,14 +9,14 @@
 [![Fedora/RHEL](https://img.shields.io/badge/Linux-DNF-red.svg)](#-fedora-rhel-centos--compatible-install)
 [![Agent Guide](https://img.shields.io/badge/AI%20Agent-Install%20Guide-7c3aed.svg)](AGENTS.md)
 
-`napctl` is the public binary distribution for Nap, a local and edge
+`napctl` is the public binary distribution for napctl & napd, a local and edge
 orchestrator for Docker containers. It wakes existing Docker containers on
 request, waits for health checks, proxies HTTP traffic, observes CPU, RAM, GPU,
 and VRAM resources, and can stop inactive containers when another requested
 workload needs the same resources.
 
-Container compute orchestration means that Nap does not replace Docker. Docker
-still runs the containers. Nap adds the control layer around those Docker
+Container compute orchestration means that napctl does not replace Docker. Docker
+still runs the containers. Napctl adds the control layer around those Docker
 containers: resource-aware wake-on-request, healthcheck waiting, gateway
 proxying, idle shutdown, remote control, and a terminal UI for operators.
 
