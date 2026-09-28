@@ -453,10 +453,11 @@ napctl node token unset gpu-server
 ```
 
 ## 🌐 Reverse Proxy Examples
-![Reverse Prox](./artifacts/general/img/reverse-proxy.png)pro
+
+![Reverse Proxy Architecture](./artifacts/general/img/reverse-proxy.png)
 
 
-Put the public reverse proxy in front of the Nap gateway, not directly in front
+Put the public reverse proxy in front of the napd gateway, not directly in front
 of the container port. The proxy must send a `Host` header that matches a
 service `host` entry in `nap.yaml`.
 
@@ -675,9 +676,9 @@ and `/` commands.
 | `/help` | Print available commands in the output panel. |
 | `/quit` | Leave the TUI. |
 
-## 🧩 How napctl And napd Work Together
+## 🧩 How napctl & napd work together
 
-![Architecture placeholder](./artifacts/general/img/template.png)
+![napd and napctl](./artifacts/general/img/reverse-proxy.png)
 
 `napctl` is the operator interface. It can run as a classic CLI, a terminal UI,
 or a remote-control client. `napd` is the server-side agent. It runs on the host
