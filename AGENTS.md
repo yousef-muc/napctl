@@ -50,6 +50,7 @@ Ask or infer these values before changing configuration:
 - Whether a reverse proxy such as Caddy, Nginx, Apache, or Traefik is already in
   front of the services.
 - For remote clients: server IP or DNS name and remote-control token env var.
+- For multi-node clients: which single node should be `default: true`.
 
 ## macOS Client Install
 
@@ -147,9 +148,24 @@ Verify host access:
 id nap
 sudo -u nap docker ps
 sudo -u nap nvidia-smi || true
+systemctl is-active napd
+systemctl is-enabled napd
 sudo napctl --config /etc/nap/nap.yaml config validate
 sudo napctl --config /etc/nap/nap.yaml --socket /run/nap/napd.sock doctor
 sudo napctl --config /etc/nap/nap.yaml --socket /run/nap/napd.sock host inspect
+```
+
+Expected systemd state on an agent host:
+
+```text
+active
+enabled
+```
+
+If `systemctl is-enabled napd` prints `disabled`, run:
+
+```sh
+sudo systemctl enable --now napd
 ```
 
 ## Fedora, RHEL, CentOS, And Compatible Hosts
@@ -243,6 +259,30 @@ nodes:
     default: true
     url: http://SERVER_IP:8788
     token_env: NAP_REMOTE_TOKEN
+```
+
+For multiple nodes, mark only one as default:
+
+```yaml
+nodes:
+  gpu-server:
+    type: remote
+    default: true
+    url: http://SERVER_IP:8788
+    token_env: NAP_REMOTE_TOKEN
+
+  gpu-server-2:
+    type: remote
+    url: http://SECOND_SERVER_IP:8788
+    token_env: NAP_REMOTE_TOKEN_2
+```
+
+Never set `default: true` on more than one node. Validate before launching the
+TUI:
+
+```sh
+napctl config validate
+napctl node ls
 ```
 
 If the user asks for a setup that works without repeated `export` commands, use:
@@ -355,14 +395,45 @@ currently selected node.
 
 ## Reverse Proxy Through Nap Gateway
 
-Nap gateway routes by `Host` header. If Caddy is in front, route public paths to
-Nap gateway and set the internal service host:
+Nap gateway routes by `Host` header. Put the public reverse proxy in front of
+the Nap gateway, not directly in front of the container port. The proxy must
+send a `Host` header that matches a service `host` entry in `/etc/nap/nap.yaml`.
+
+Example service:
+
+```yaml
+services:
+  app:
+    host: app.nap.local
+    container: app
+    target: http://127.0.0.1:8080
+```
+
+### Caddy
+
+Host-based:
 
 ```caddyfile
-http://SERVER_IP {
-  handle_path /app/* {
+app.example.com {
+  reverse_proxy 127.0.0.1:8787 {
+    header_up Host app.nap.local
+  }
+}
+```
+
+Path-based:
+
+```caddyfile
+example.com {
+  handle_path /flux/* {
     reverse_proxy 127.0.0.1:8787 {
-      header_up Host example.nap.local
+      header_up Host flux.nap.local
+    }
+  }
+
+  handle_path /qwen/* {
+    reverse_proxy 127.0.0.1:8787 {
+      header_up Host qwen.nap.local
     }
   }
 }
@@ -373,6 +444,107 @@ Validate and reload:
 ```sh
 sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl reload caddy
+```
+
+### nginx
+
+Host-based:
+
+```nginx
+server {
+    listen 80;
+    server_name app.example.com;
+
+    location / {
+        proxy_set_header Host app.nap.local;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:8787;
+    }
+}
+```
+
+Path-based:
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+
+    location /flux/ {
+        rewrite ^/flux/?(.*)$ /$1 break;
+        proxy_set_header Host flux.nap.local;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:8787;
+    }
+
+    location /qwen/ {
+        rewrite ^/qwen/?(.*)$ /$1 break;
+        proxy_set_header Host qwen.nap.local;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:8787;
+    }
+}
+```
+
+Validate and reload:
+
+```sh
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### Apache
+
+Enable modules:
+
+```sh
+sudo a2enmod proxy proxy_http headers rewrite
+sudo systemctl reload apache2
+```
+
+Host-based:
+
+```apache
+<VirtualHost *:80>
+    ServerName app.example.com
+
+    RequestHeader set Host "app.nap.local"
+    ProxyPass "/" "http://127.0.0.1:8787/"
+    ProxyPassReverse "/" "http://127.0.0.1:8787/"
+</VirtualHost>
+```
+
+Path-based:
+
+```apache
+<VirtualHost *:80>
+    ServerName example.com
+
+    <Location "/flux/">
+        RequestHeader set Host "flux.nap.local"
+        ProxyPass "http://127.0.0.1:8787/"
+        ProxyPassReverse "http://127.0.0.1:8787/"
+    </Location>
+
+    <Location "/qwen/">
+        RequestHeader set Host "qwen.nap.local"
+        ProxyPass "http://127.0.0.1:8787/"
+        ProxyPassReverse "http://127.0.0.1:8787/"
+    </Location>
+</VirtualHost>
+```
+
+Validate and reload:
+
+```sh
+sudo apachectl configtest
+sudo systemctl reload apache2
 ```
 
 ## Operational Verification
