@@ -18,6 +18,14 @@ Install the same package everywhere. Run `napd` only on machines that should
 manage Docker workloads. Client-only machines can use `napctl` without starting
 the daemon.
 
+## Coding Agent Installation
+
+If you want ChatGPT Codex, OpenClaude, OpenCode, Pi, or another coding agent to
+install and configure Nap for you, point it to [AGENTS.md](AGENTS.md). That file
+contains the package-manager install commands, role-specific setup rules,
+remote-node configuration, reverse-proxy guidance, and verification checklist an
+agent should follow.
+
 ## macOS Install
 
 ```sh
