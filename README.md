@@ -766,9 +766,9 @@ app.example.com {
 }
 ```
 
-### 3. 🖧 Local Client And LAN Server
+### 3. 🌐 Local Client And LAN Server
 
-![LAN server placeholder](./artifacts/general/img/template.png)
+![LAN server placeholder](./artifacts/general/img/lan.png)
 
 Run `napctl` on a workstation and `napd` on one or more Docker/GPU servers in
 the same local network.
