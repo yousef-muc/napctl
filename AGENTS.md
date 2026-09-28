@@ -31,6 +31,9 @@ The package name is always `napctl`. It installs both binaries:
 - Prefer package-manager installs over manual binary downloads.
 - Verify every installation with `napctl version`, `napd --version`, `doctor`,
   `host inspect`, and `service ls`.
+- If the user wants a client that works without repeated `export` commands, use
+  `napctl node token set <node> --stdin` to store the token in that user's local
+  Nap config.
 - Use HTTPS or a trusted network boundary for remote control in production.
 
 ## Information To Collect First
@@ -79,6 +82,13 @@ nodes:
     url: http://SERVER_IP:8788
     token_env: NAP_REMOTE_TOKEN
 EOF
+```
+
+Optionally store the token directly in the local client config so future
+`napctl` runs do not require an `export` first:
+
+```sh
+printf '%s' 'replace-with-server-token' | napctl node token set gpu-server --stdin
 ```
 
 Verify:
@@ -233,7 +243,54 @@ sudo chmod 0600 /etc/nap/napd.env
 sudo systemctl restart napd
 ```
 
+Show the configured token again on an agent host such as `blackwell` or
+`vision`:
+
+```sh
+sudo grep '^NAP_REMOTE_TOKEN=' /etc/nap/napd.env
+sudo sed -n 's/^NAP_REMOTE_TOKEN=//p' /etc/nap/napd.env
+```
+
+If no token is stored there, generate a new one, update `/etc/nap/napd.env`, and
+restart `napd`.
+
 Restrict port `8788` to trusted clients with firewall rules when possible.
+
+## Client Token Storage
+
+Agents cannot permanently set environment variables in the user's parent shell.
+Use one of these supported client-side approaches.
+
+Session-only token:
+
+```sh
+export NAP_REMOTE_TOKEN='replace-with-server-token'
+napctl --node gpu-server doctor
+```
+
+Persistent per-node token in the local Nap config:
+
+```sh
+printf '%s' 'replace-with-server-token' | napctl node token set gpu-server --stdin
+napctl --node gpu-server doctor
+napctl
+```
+
+Direct flag form, only when the user accepts shell-history exposure:
+
+```sh
+napctl node token set gpu-server --token 'replace-with-server-token'
+```
+
+Remove the stored direct token:
+
+```sh
+napctl node token unset gpu-server
+```
+
+With multiple nodes configured, plain `napctl` opens the multi-node TUI. Switch
+nodes with `n` or `Tab`, and `p` for the previous node. Commands act on the
+currently selected node.
 
 ## Reverse Proxy Through Nap Gateway
 

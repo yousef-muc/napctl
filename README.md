@@ -231,6 +231,13 @@ sudo chmod 0600 /etc/nap/napd.env
 sudo systemctl restart napd
 ```
 
+Show the configured token again on a server such as `blackwell` or `vision`:
+
+```sh
+sudo grep '^NAP_REMOTE_TOKEN=' /etc/nap/napd.env
+sudo sed -n 's/^NAP_REMOTE_TOKEN=//p' /etc/nap/napd.env
+```
+
 On the client machine:
 
 ```sh
@@ -246,6 +253,26 @@ nodes:
 EOF
 ```
 
+Instead of exporting tokens before every shell session, store the token directly
+for a configured node in the local client config:
+
+```sh
+printf '%s' 'replace-with-generated-token' | napctl node token set gpu-server --stdin
+napctl
+```
+
+The direct form also exists, but may be captured in shell history:
+
+```sh
+napctl node token set gpu-server --token 'replace-with-generated-token'
+```
+
+Remove a direct token from the local config:
+
+```sh
+napctl node token unset gpu-server
+```
+
 Verify from the client:
 
 ```sh
@@ -254,6 +281,10 @@ napctl --node gpu-server host inspect
 napctl --node gpu-server service ls
 napctl --node gpu-server
 ```
+
+With multiple configured nodes, plain `napctl` opens the multi-node TUI. Switch
+nodes with `n` or `Tab`, and `p` for the previous node. Commands act on the
+currently selected node.
 
 For production, put HTTPS in front of the remote control API or use native TLS.
 
