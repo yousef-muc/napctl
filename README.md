@@ -195,6 +195,67 @@ sudo napctl --config /etc/nap/nap.yaml --socket /run/nap/napd.sock service ls
 
 If `service ls` is empty, `napd` is running but no services are configured yet.
 
+## Configuration And Environment Files
+
+`napctl` is the client. It reads a `nap.yaml` and optional shell environment
+variables. It does not have a separate global `.env` file.
+
+Common client paths:
+
+- macOS user config: `$HOME/Library/Application Support/nap/nap.yaml`
+- Linux user config: `$HOME/.config/nap/nap.yaml`
+- Resolved path: `napctl config path`
+- Override path: `NAP_CONFIG=/path/to/nap.yaml napctl ...`
+
+Client-only `nap.yaml` example:
+
+```yaml
+nodes:
+  gpu-server:
+    type: remote
+    default: true
+    url: http://SERVER_IP:8788
+    token_env: NAP_REMOTE_TOKEN
+
+  gpu-server-2:
+    type: remote
+    url: http://SECOND_SERVER_IP:8788
+    token_env: NAP_REMOTE_TOKEN_2
+```
+
+Instead of using `token_env`, the token can be stored directly per node with
+`napctl node token set`. Do this only in a local private client config.
+
+`napd` is the host daemon. Linux packages use:
+
+- `/etc/nap/nap.yaml`: main daemon config
+- `/etc/nap/napd.env`: optional systemd environment file for secrets/overrides
+- `/run/nap/napd.sock`: local Unix control socket
+- `/usr/lib/systemd/system/napd.service`: packaged systemd unit
+
+Typical `/etc/nap/napd.env`:
+
+```sh
+NAP_LOG_LEVEL=info
+NAP_REMOTE_TOKEN=replace-with-generated-token
+NAP_REMOTE_LISTEN=0.0.0.0:8788
+NAP_REMOTE_TOKEN_ENV=NAP_REMOTE_TOKEN
+```
+
+Supported `napd` environment variables:
+
+| Variable | Flag | Purpose |
+| --- | --- | --- |
+| `NAP_CONFIG` | `--config` | Path to `nap.yaml`. |
+| `NAP_SOCKET` | `--socket` | Local control socket. |
+| `NAP_GATEWAY_LISTEN` | `--gateway-listen` | HTTP gateway listen address. |
+| `NAP_REMOTE_LISTEN` | `--remote-listen` | Remote-control API listen address. |
+| `NAP_REMOTE_TOKEN` | `--remote-token` | Remote-control bearer token. |
+| `NAP_REMOTE_TOKEN_ENV` | `--remote-token-env` | Env var name containing the remote token. |
+| `NAP_REMOTE_TLS_CERT` | `--remote-tls-cert` | TLS certificate for remote control. |
+| `NAP_REMOTE_TLS_KEY` | `--remote-tls-key` | TLS private key for remote control. |
+| `NAP_LOG_LEVEL` | `--log-level` | `debug`, `info`, `warn`, or `error`. |
+
 ## Split Client And Agent Setup
 
 Typical setup:
@@ -231,7 +292,7 @@ sudo chmod 0600 /etc/nap/napd.env
 sudo systemctl restart napd
 ```
 
-Show the configured token again on a server such as `blackwell` or `vision`:
+Show the configured token again on an agent host:
 
 ```sh
 sudo grep '^NAP_REMOTE_TOKEN=' /etc/nap/napd.env
