@@ -1,69 +1,55 @@
-# napctl
+# napctl - Docker Container Compute Orchestration
 
-`napctl` is the public binary distribution for Nap, a local and edge compute
-orchestrator for Docker workloads.
+![Hero Image](./artifacts/general/img/hero.png)
 
-Nap wakes existing Docker containers on request, waits for health checks,
-proxies HTTP traffic, observes CPU/RAM/GPU resources, and shifts workloads
-between containers when resources are needed.
+[![Release](https://img.shields.io/github/v/release/yousef-muc/napctl?label=release)](https://github.com/yousef-muc/napctl/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![macOS](https://img.shields.io/badge/macOS-Homebrew-black.svg)](#-macos-install)
+[![Ubuntu/Debian](https://img.shields.io/badge/Linux-APT-orange.svg)](#-ubuntu--debian-install)
+[![Fedora/RHEL](https://img.shields.io/badge/Linux-DNF-red.svg)](#-fedora-rhel-centos--compatible-install)
+[![Agent Guide](https://img.shields.io/badge/AI%20Agent-Install%20Guide-7c3aed.svg)](AGENTS.md)
 
-## Included Binaries
+`napctl` is the public binary distribution for Nap, a local and edge
+orchestrator for Docker containers. It wakes existing Docker containers on
+request, waits for health checks, proxies HTTP traffic, observes CPU, RAM, GPU,
+and VRAM resources, and can stop inactive containers when another requested
+workload needs the same resources.
 
-The package installs both binaries:
+Container compute orchestration means that Nap does not replace Docker. Docker
+still runs the containers. Nap adds the control layer around those Docker
+containers: resource-aware wake-on-request, healthcheck waiting, gateway
+proxying, idle shutdown, remote control, and a terminal UI for operators.
 
-- `napctl`: CLI and terminal UI client
-- `napd`: host agent, control API, gateway, and Docker orchestrator
+The package name is always `napctl`. It installs both binaries:
 
-Install the same package everywhere. Run `napd` only on machines that should
-manage Docker workloads. Client-only machines can use `napctl` without starting
+- `napctl`: CLI and terminal UI client.
+- `napd`: host agent, control API, gateway, and Docker workload orchestrator.
+
+Install the same package everywhere. Start `napd` only on machines that should
+manage Docker workloads. Client-only machines can use `napctl` without running
 the daemon.
 
-## Coding Agent Installation
+## 📦 Installation
 
-If you want ChatGPT Codex, OpenClaude, OpenCode, Pi, or another coding agent to
-install and configure Nap for you, point it to [AGENTS.md](AGENTS.md). That file
-contains the package-manager install commands, role-specific setup rules,
-remote-node configuration, reverse-proxy guidance, and verification checklist an
-agent should follow.
+Install `napctl` with the package manager for your platform. Linux packages
+install both `napctl` and `napd`, but they do not automatically enable the
+daemon on every machine. This is intentional: client-only workstations should
+not accidentally become agent hosts.
 
-## macOS Install
+Use the Linux agent host enablement steps only on machines that should manage
+Docker containers.
 
-```sh
-brew tap yousef-muc/tap
-brew install napctl
-```
+### 🐧 Ubuntu & Debian Install
 
-Verify:
+Use the one-line installer when you want the APT repository configured for you.
 
-```sh
-napctl version
-napd --version
-napctl config path
-```
-
-Client-only Macs do not need to start the service. If this Mac should manage
-local Docker workloads:
-
-```sh
-brew services start napctl
-```
-
-Update:
-
-```sh
-brew update
-brew upgrade napctl
-```
-
-## Ubuntu And Debian Install
-
-One-line install:
+#### 1️⃣ Install from the APT repository
 
 ```sh
 curl -fsSL https://yousef-muc.github.io/napctl/install.sh | sh
 ```
 
-Manual APT repository setup:
+Manual APT setup:
 
 ```sh
 sudo install -d -m 0755 /usr/share/keyrings
@@ -73,48 +59,16 @@ sudo apt update
 sudo apt install napctl
 ```
 
-Verify:
+#### 2️⃣ Verify the installed binaries
 
 ```sh
 napctl version
 napd --version
-sudo systemctl status napd --no-pager
-sudo napctl --config /etc/nap/nap.yaml config validate
-sudo napctl --config /etc/nap/nap.yaml --socket /run/nap/napd.sock doctor
-sudo napctl --config /etc/nap/nap.yaml --socket /run/nap/napd.sock host inspect
-sudo napctl --config /etc/nap/nap.yaml --socket /run/nap/napd.sock service ls
 ```
 
-Update:
+#### 3️⃣ Enable this Linux machine as an agent host
 
-```sh
-sudo apt update
-sudo apt upgrade napctl
-```
-
-## Fedora, RHEL, CentOS, And Compatible Install
-
-```sh
-sudo curl -fsSL https://yousef-muc.github.io/napctl/rpm/napctl.repo -o /etc/yum.repos.d/napctl.repo
-sudo dnf install napctl
-```
-
-Update:
-
-```sh
-sudo dnf upgrade napctl
-```
-
-The APT repository metadata is signed. The RPM repository metadata and RPM
-packages are signed with the published Nap Linux repository key:
-
-```text
-https://yousef-muc.github.io/napctl/rpm/RPM-GPG-KEY-napctl
-```
-
-## Enable A Linux Agent Host
-
-Run these only on machines that should manage Docker workloads:
+Run these only on machines that should manage Docker containers:
 
 ```sh
 sudo usermod -aG docker nap
@@ -122,23 +76,168 @@ sudo usermod -aG nap "$USER"
 sudo systemctl enable --now napd
 ```
 
-After changing group membership, restart `napd` and start a new login shell:
+After changing group membership, restart `napd` and open a new login shell:
 
 ```sh
 sudo systemctl restart napd
 ```
 
-Check Docker and GPU visibility:
+#### 4️⃣ Verify Docker, GPU, and boot state
 
 ```sh
 id nap
 sudo -u nap docker ps
-sudo -u nap nvidia-smi
+sudo -u nap nvidia-smi || true
+systemctl is-active napd
+systemctl is-enabled napd
+sudo systemctl status napd --no-pager -l
 ```
 
-## Configure Services
+Expected systemd state on an agent host:
 
-Nap currently manages existing Docker containers with:
+```text
+active
+enabled
+```
+
+If `systemctl is-enabled napd` prints `disabled`, run:
+
+```sh
+sudo systemctl enable --now napd
+```
+
+#### 5️⃣ Update
+
+```sh
+sudo apt update
+sudo apt install --only-upgrade napctl
+sudo systemctl restart napd
+```
+
+### 🎩 Fedora, RHEL, CentOS, & Compatible Install
+
+Use the DNF repository on Fedora, RHEL, CentOS Stream, and compatible systems.
+
+#### 1️⃣ Install from the RPM repository
+
+```sh
+sudo curl -fsSL https://yousef-muc.github.io/napctl/rpm/napctl.repo -o /etc/yum.repos.d/napctl.repo
+sudo dnf install napctl
+```
+
+The RPM repository metadata and RPM packages are signed with the published Nap
+Linux repository key:
+
+```text
+https://yousef-muc.github.io/napctl/rpm/RPM-GPG-KEY-napctl
+```
+
+#### 2️⃣ Verify the installed binaries
+
+```sh
+napctl version
+napd --version
+```
+
+#### 3️⃣ Enable this Linux machine as an agent host
+
+```sh
+sudo usermod -aG docker nap
+sudo usermod -aG nap "$USER"
+sudo systemctl enable --now napd
+```
+
+#### 4️⃣ Verify host access
+
+```sh
+id nap
+sudo -u nap docker ps
+sudo -u nap nvidia-smi || true
+systemctl is-active napd
+systemctl is-enabled napd
+```
+
+#### 5️⃣ Update
+
+```sh
+sudo dnf upgrade napctl
+sudo systemctl restart napd
+```
+
+### 🍎 macOS Install
+
+Use Homebrew on macOS. Client-only Macs do not need to start the service.
+
+#### 1️⃣ Install with Homebrew
+
+```sh
+brew tap yousef-muc/tap
+brew install napctl
+```
+
+#### 2️⃣ Verify
+
+```sh
+napctl version
+napd --version
+napctl config path
+```
+
+#### 3️⃣ Client-only setup
+
+If the Mac controls remote Linux GPU servers, do not start the local service:
+
+```sh
+brew services stop napctl || true
+```
+
+#### 4️⃣ Optional local Docker host
+
+If this Mac should manage local Docker workloads:
+
+```sh
+brew services start napctl
+napctl doctor
+napctl host inspect
+```
+
+#### 5️⃣ Update
+
+```sh
+brew update
+brew upgrade napctl
+```
+
+## ⚙️ Configuration
+
+Nap has two configuration sides:
+
+- `napd` configuration lives on machines that manage Docker containers.
+- `napctl` configuration lives on client machines that control local or remote
+  agents.
+
+Use `napctl config validate` after editing YAML. For multi-node client configs,
+only one node can be marked `default: true`.
+
+### 🧠 napd: Agent Host Configuration
+
+`napd` is the host daemon. It runs next to Docker, exposes the local Unix
+control socket, optionally exposes a remote control API, and owns the HTTP
+gateway.
+
+Linux package paths:
+
+| Path | Purpose |
+| --- | --- |
+| `/etc/nap/nap.yaml` | Main daemon config: agent socket, gateway, services, resources. |
+| `/etc/nap/napd.env` | Optional systemd environment file for secrets and overrides. |
+| `/run/nap/napd.sock` | Local Unix control socket. |
+| `/usr/lib/systemd/system/napd.service` | Packaged systemd unit on RPM systems. |
+| `/lib/systemd/system/napd.service` | Packaged systemd unit on Debian-based systems. |
+
+#### 1️⃣ Create Docker containers once
+
+Nap manages existing Docker containers with:
 
 ```text
 docker start
@@ -147,15 +246,27 @@ docker inspect
 docker logs
 ```
 
-Create containers once with Docker or Docker Compose, then leave them stopped for
-Nap to wake on demand. Avoid `docker compose down` for normal switching, because
-it can remove the container Nap needs to start.
+Create containers once with Docker or Docker Compose, then leave them stopped
+for Nap to wake on demand:
 
-Example `/etc/nap/nap.yaml`:
+```sh
+cd /path/to/service-compose
+docker compose up -d
+docker stop CONTAINER_NAME
+docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+```
+
+Avoid `docker compose down` during normal Nap switching, because it can remove
+the container Nap needs to start.
+
+#### 2️⃣ Configure `/etc/nap/nap.yaml`
 
 ```yaml
 agent:
   socket: /run/nap/napd.sock
+  remote:
+    listen: ""
+    token_env: NAP_REMOTE_TOKEN
 
 nodes:
   local:
@@ -185,7 +296,27 @@ services:
     stop_timeout: 30s
 ```
 
-Apply config changes:
+#### 3️⃣ Understand the main YAML sections
+
+| Section | Purpose |
+| --- | --- |
+| `agent.socket` | Local Unix socket used by local `napctl` and the packaged service. |
+| `agent.remote.listen` | Remote control API listen address, for example `0.0.0.0:8788`. |
+| `agent.remote.token_env` | Environment variable that contains the remote bearer token. |
+| `nodes` | Client-style node definitions. On an agent host this usually contains `local`. |
+| `gateway.listen` | HTTP gateway address. Public reverse proxies should point here. |
+| `services.<name>.host` | Host header that selects the service at the gateway. |
+| `services.<name>.container` | Existing Docker container name. |
+| `services.<name>.target` | Internal URL to proxy to after the container is healthy. |
+| `healthcheck.url` | URL Nap waits for before proxying traffic. |
+| `resources.memory` | Memory budget used by the scheduler. |
+| `resources.gpus.count` | Number of GPUs required. |
+| `resources.gpus.vendor` | GPU vendor selector, for example `nvidia`. |
+| `resources.gpus.min_vram` | Minimum VRAM requirement. |
+| `idle` | Time after which an inactive service can be stopped. |
+| `stop_timeout` | Grace period for stopping the Docker container. |
+
+#### 4️⃣ Apply daemon config changes
 
 ```sh
 sudo napctl --config /etc/nap/nap.yaml config validate
@@ -195,19 +326,80 @@ sudo napctl --config /etc/nap/nap.yaml --socket /run/nap/napd.sock service ls
 
 If `service ls` is empty, `napd` is running but no services are configured yet.
 
-## Configuration And Environment Files
+### 🔐 napd: Environment File And Remote Tokens
 
-`napctl` is the client. It reads a `nap.yaml` and optional shell environment
-variables. It does not have a separate global `.env` file.
+Remote control lets a workstation run `napctl --node gpu-server ...` against a
+server. Protect the remote API with a bearer token and restrict port `8788` to
+trusted networks where possible.
+
+#### 1️⃣ Generate a remote token on the server
+
+```sh
+napctl token --env NAP_REMOTE_TOKEN
+```
+
+#### 2️⃣ Store it in `/etc/nap/napd.env`
+
+```sh
+sudo tee /etc/nap/napd.env >/dev/null <<'EOF'
+NAP_LOG_LEVEL=info
+NAP_REMOTE_TOKEN=replace-with-generated-token
+NAP_REMOTE_LISTEN=0.0.0.0:8788
+NAP_REMOTE_TOKEN_ENV=NAP_REMOTE_TOKEN
+EOF
+sudo chmod 0600 /etc/nap/napd.env
+sudo systemctl restart napd
+```
+
+#### 3️⃣ Show the configured token again on an agent host
+
+```sh
+sudo grep '^NAP_REMOTE_TOKEN=' /etc/nap/napd.env
+sudo sed -n 's/^NAP_REMOTE_TOKEN=//p' /etc/nap/napd.env
+```
+
+#### 4️⃣ Supported `napd` environment variables
+
+| Variable | Flag | Purpose |
+| --- | --- | --- |
+| `NAP_CONFIG` | `--config` | Path to `nap.yaml`. |
+| `NAP_SOCKET` | `--socket` | Local control socket. |
+| `NAP_GATEWAY_LISTEN` | `--gateway-listen` | HTTP gateway listen address. |
+| `NAP_REMOTE_LISTEN` | `--remote-listen` | Remote-control API listen address. |
+| `NAP_REMOTE_TOKEN` | `--remote-token` | Remote-control bearer token. |
+| `NAP_REMOTE_TOKEN_ENV` | `--remote-token-env` | Env var name containing the remote token. |
+| `NAP_REMOTE_TLS_CERT` | `--remote-tls-cert` | TLS certificate for remote control. |
+| `NAP_REMOTE_TLS_KEY` | `--remote-tls-key` | TLS private key for remote control. |
+| `NAP_LOG_LEVEL` | `--log-level` | `debug`, `info`, `warn`, or `error`. |
+
+### 💻 napctl: Client Configuration
+
+`napctl` reads a local `nap.yaml` and optional environment variables. It does
+not have a separate global `.env` file.
 
 Common client paths:
 
-- macOS user config: `$HOME/Library/Application Support/nap/nap.yaml`
-- Linux user config: `$HOME/.config/nap/nap.yaml`
-- Resolved path: `napctl config path`
-- Override path: `NAP_CONFIG=/path/to/nap.yaml napctl ...`
+| Platform | Path |
+| --- | --- |
+| macOS | `$HOME/Library/Application Support/nap/nap.yaml` |
+| Linux | `$HOME/.config/nap/nap.yaml` |
+| Any | `napctl config path` |
+| Override | `NAP_CONFIG=/path/to/nap.yaml napctl ...` |
 
-Client-only `nap.yaml` example:
+#### 1️⃣ Configure one remote node
+
+```yaml
+nodes:
+  gpu-server:
+    type: remote
+    default: true
+    url: http://SERVER_IP:8788
+    token_env: NAP_REMOTE_TOKEN
+```
+
+#### 2️⃣ Configure multiple remote nodes
+
+Only one node may be `default: true`:
 
 ```yaml
 nodes:
@@ -223,218 +415,47 @@ nodes:
     token_env: NAP_REMOTE_TOKEN_2
 ```
 
-Instead of using `token_env`, the token can be stored directly per node with
-`napctl node token set`. Do this only in a local private client config.
-
-`napd` is the host daemon. Linux packages use:
-
-- `/etc/nap/nap.yaml`: main daemon config
-- `/etc/nap/napd.env`: optional systemd environment file for secrets/overrides
-- `/run/nap/napd.sock`: local Unix control socket
-- `/usr/lib/systemd/system/napd.service`: packaged systemd unit
-
-Typical `/etc/nap/napd.env`:
+Validate before launching the TUI:
 
 ```sh
-NAP_LOG_LEVEL=info
-NAP_REMOTE_TOKEN=replace-with-generated-token
-NAP_REMOTE_LISTEN=0.0.0.0:8788
-NAP_REMOTE_TOKEN_ENV=NAP_REMOTE_TOKEN
+napctl config validate
+napctl node ls
 ```
 
-Supported `napd` environment variables:
-
-| Variable | Flag | Purpose |
-| --- | --- | --- |
-| `NAP_CONFIG` | `--config` | Path to `nap.yaml`. |
-| `NAP_SOCKET` | `--socket` | Local control socket. |
-| `NAP_GATEWAY_LISTEN` | `--gateway-listen` | HTTP gateway listen address. |
-| `NAP_REMOTE_LISTEN` | `--remote-listen` | Remote-control API listen address. |
-| `NAP_REMOTE_TOKEN` | `--remote-token` | Remote-control bearer token. |
-| `NAP_REMOTE_TOKEN_ENV` | `--remote-token-env` | Env var name containing the remote token. |
-| `NAP_REMOTE_TLS_CERT` | `--remote-tls-cert` | TLS certificate for remote control. |
-| `NAP_REMOTE_TLS_KEY` | `--remote-tls-key` | TLS private key for remote control. |
-| `NAP_LOG_LEVEL` | `--log-level` | `debug`, `info`, `warn`, or `error`. |
-
-## Linux Agent Boot Enablement
-
-The `napctl` package installs both `napctl` and `napd`, but it does not start
-the daemon automatically on every machine. This keeps client-only workstations
-from accidentally running an agent. On Linux machines that should manage Docker
-workloads, enable the service explicitly:
-
-```sh
-sudo usermod -aG docker nap
-sudo usermod -aG nap "$USER"
-sudo systemctl enable --now napd
-```
-
-Verify that the daemon is both running now and enabled for the next boot:
-
-```sh
-systemctl is-active napd
-systemctl is-enabled napd
-sudo systemctl status napd --no-pager -l
-```
-
-Expected output:
-
-```text
-active
-enabled
-```
-
-If `systemctl status napd` shows `disabled` after an install, upgrade, or reboot,
-run this again:
-
-```sh
-sudo systemctl enable --now napd
-```
-
-## Split Client And Agent Setup
-
-Typical setup:
-
-```text
-MacBook or admin workstation
-  napctl
-    |
-    | HTTP(S) + bearer token
-    v
-Docker/GPU server
-  napd
-    ├── remote control API
-    ├── HTTP gateway
-    └── Docker workloads
-```
-
-On the server, generate a token:
-
-```sh
-napctl token --env NAP_REMOTE_TOKEN
-```
-
-Create `/etc/nap/napd.env`:
-
-```sh
-sudo tee /etc/nap/napd.env >/dev/null <<'EOF'
-NAP_LOG_LEVEL=info
-NAP_REMOTE_TOKEN=replace-with-generated-token
-NAP_REMOTE_LISTEN=0.0.0.0:8788
-NAP_REMOTE_TOKEN_ENV=NAP_REMOTE_TOKEN
-EOF
-sudo chmod 0600 /etc/nap/napd.env
-sudo systemctl restart napd
-```
-
-Show the configured token again on an agent host:
-
-```sh
-sudo grep '^NAP_REMOTE_TOKEN=' /etc/nap/napd.env
-sudo sed -n 's/^NAP_REMOTE_TOKEN=//p' /etc/nap/napd.env
-```
-
-On the client machine:
+#### 3️⃣ Use session-only token environment variables
 
 ```sh
 export NAP_REMOTE_TOKEN='replace-with-generated-token'
-mkdir -p "$HOME/Library/Application Support/nap"
-cat > "$HOME/Library/Application Support/nap/nap.yaml" <<'EOF'
-nodes:
-  gpu-server:
-    type: remote
-    default: true
-    url: http://SERVER_IP:8788
-    token_env: NAP_REMOTE_TOKEN
-EOF
+napctl --node gpu-server doctor
 ```
 
-Instead of exporting tokens before every shell session, store the token directly
-for a configured node in the local client config:
+#### 4️⃣ Store tokens directly in local client config
+
+This avoids repeated `export` commands. Use it only in a private local client
+config:
 
 ```sh
 printf '%s' 'replace-with-generated-token' | napctl node token set gpu-server --stdin
+napctl --node gpu-server doctor
 napctl
 ```
 
-The direct form also exists, but may be captured in shell history:
+Direct flag form, only when shell-history exposure is acceptable:
 
 ```sh
 napctl node token set gpu-server --token 'replace-with-generated-token'
 ```
 
-Remove a direct token from the local config:
+Remove a direct token:
 
 ```sh
 napctl node token unset gpu-server
 ```
 
-Verify from the client:
+## 🌐 Reverse Proxy Examples
 
-```sh
-napctl --node gpu-server doctor
-napctl --node gpu-server host inspect
-napctl --node gpu-server service ls
-napctl --node gpu-server
-```
-
-With multiple configured nodes, plain `napctl` opens the multi-node TUI. Switch
-nodes with `n` or `Tab`, and `p` for the previous node. Commands act on the
-currently selected node.
-
-For production, put HTTPS in front of the remote control API or use native TLS.
-
-## Terminal UI
-
-Run `napctl` to open the dashboard. With multiple configured nodes, the right
-side shows all nodes and the selected node drives the services, host metrics,
-and `/` commands.
-
-Global keys:
-
-- `/`: open the command palette.
-- `r`: refresh nodes, services, and host metrics.
-- `n` or `Tab`: select the next node.
-- `p` or `Shift+Tab`: select the previous node.
-- `Enter` or `i`: inspect the selected service.
-- `s`: start the selected service if it is stopped, or stop it if it is running.
-- `x`: restart the selected service.
-- `l`: show logs for the selected service.
-- `q` or `Ctrl+C`: quit.
-
-Command palette commands:
-
-- `/doctor`: validate config and check the selected `napd` agent.
-- `/config validate`: validate the active `nap.yaml` without contacting `napd`.
-- `/host inspect`: show runtime, CPU, RAM, GPU, VRAM, and GPU process details.
-- `/node ls`: list configured nodes from the client config.
-- `/service ls`: refresh services from the selected node.
-- `/service inspect <name>`: show service state, container, target, and resources.
-- `/service plan <name>`: explain whether a service can start and what would be preempted.
-- `/service start <name>`: start a configured container through `napd`.
-- `/service stop <name>`: stop a configured container through `napd`.
-- `/service restart <name>`: restart a configured container through `napd`.
-- `/service logs <name>`: show recent Docker logs for a service.
-- `/top`: return to the dashboard.
-- `/help`: print the available palette commands in the output panel.
-- `/quit`: leave the TUI.
-
-## Gateway Requests
-
-Nap routes gateway traffic by `Host` header.
-
-```sh
-curl -v -H 'Host: app.nap.local' http://SERVER_IP:8787/
-```
-
-When the request arrives, `napd` checks resources, starts the configured
-container if needed, waits for the healthcheck, then proxies the request to the
-configured target.
-
-## Reverse Proxy Examples
-
-Put your public reverse proxy in front of the Nap gateway, not directly in
-front of the container port. The proxy must send a `Host` header that matches a
+Put the public reverse proxy in front of the Nap gateway, not directly in front
+of the container port. The proxy must send a `Host` header that matches a
 service `host` entry in `nap.yaml`.
 
 Example service:
@@ -447,16 +468,12 @@ services:
     target: http://127.0.0.1:8080
 ```
 
-Host-based routing keeps the original URL simple. Configure the public hostname
-as the service `host`, or override the upstream `Host` header to the internal
-Nap service host.
+Host-based routing keeps the original URL simple. Path-based routing also works
+when the proxy strips the public path prefix before forwarding to Nap.
 
-Path-based routing also works. In that case, strip the public path prefix before
-proxying to Nap and set `Host` to the service host.
+### 🟣 Caddy
 
-### Caddy
-
-Host-based:
+#### 1️⃣ Host-based
 
 ```caddyfile
 app.example.com {
@@ -466,7 +483,7 @@ app.example.com {
 }
 ```
 
-Path-based:
+#### 2️⃣ Path-based
 
 ```caddyfile
 example.com {
@@ -484,12 +501,16 @@ example.com {
 }
 ```
 
-`handle_path` strips `/flux` or `/qwen` before the request reaches Nap. This is
-useful when the container expects requests at `/`.
+#### 3️⃣ Validate and reload
 
-### nginx
+```sh
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
 
-Host-based:
+### 🟢 nginx
+
+#### 1️⃣ Host-based
 
 ```nginx
 server {
@@ -506,7 +527,7 @@ server {
 }
 ```
 
-Path-based:
+#### 2️⃣ Path-based
 
 ```nginx
 server {
@@ -533,23 +554,23 @@ server {
 }
 ```
 
-Reload nginx after validation:
+#### 3️⃣ Validate and reload
 
 ```sh
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### Apache
+### 🟠 Apache
 
-Enable the required modules once:
+#### 1️⃣ Enable modules
 
 ```sh
 sudo a2enmod proxy proxy_http headers rewrite
 sudo systemctl reload apache2
 ```
 
-Host-based:
+#### 2️⃣ Host-based
 
 ```apache
 <VirtualHost *:80>
@@ -561,7 +582,7 @@ Host-based:
 </VirtualHost>
 ```
 
-Path-based:
+#### 3️⃣ Path-based
 
 ```apache
 <VirtualHost *:80>
@@ -581,14 +602,223 @@ Path-based:
 </VirtualHost>
 ```
 
-Reload Apache after validation:
+#### 4️⃣ Validate and reload
 
 ```sh
 sudo apachectl configtest
 sudo systemctl reload apache2
 ```
 
-## Verify Release Downloads
+## 🚪 Gateway Requests
+
+The Nap gateway routes HTTP traffic by `Host` header. Reverse proxies should
+forward requests to the gateway and set `Host` to the configured service host.
+When everything runs on one machine, local applications can also send requests
+directly to the gateway.
+
+### 1️⃣ Direct local gateway request
+
+```sh
+curl -v -H 'Host: app.nap.local' http://127.0.0.1:8787/
+```
+
+### 2️⃣ Remote gateway request
+
+```sh
+curl -v -H 'Host: app.nap.local' http://SERVER_IP:8787/
+```
+
+### 3️⃣ What happens after the request arrives
+
+`napd` checks resources, stops safe preemption candidates if required, starts
+the configured Docker container, waits for the healthcheck, and then proxies the
+request to the configured `target`.
+
+## 🖥️ Terminal UI Commands
+
+Run `napctl` to open the dashboard. With multiple configured nodes, the right
+side shows all nodes and the selected node drives the services, host metrics,
+and `/` commands.
+
+### 1️⃣ Global keys
+
+| Key | Action |
+| --- | --- |
+| `/` | Open the command palette. |
+| `r` | Refresh nodes, services, and host metrics. |
+| `n` or `Tab` | Select the next node. |
+| `p` or `Shift+Tab` | Select the previous node. |
+| `Enter` or `i` | Inspect the selected service. |
+| `s` | Start the selected service if stopped, or stop it if running. |
+| `x` | Restart the selected service. |
+| `l` | Show logs for the selected service. |
+| `q` or `Ctrl+C` | Quit. |
+
+### 2️⃣ Command palette
+
+| Command | What it does |
+| --- | --- |
+| `/doctor` | Validate config and check the selected `napd` agent. |
+| `/config validate` | Validate the active `nap.yaml` without contacting `napd`. |
+| `/host inspect` | Show runtime, CPU, RAM, GPU, VRAM, and GPU process details. |
+| `/node ls` | List configured nodes from the client config. |
+| `/service ls` | Refresh services from the selected node. |
+| `/service inspect <name>` | Show service state, container, target, and resources. |
+| `/service plan <name>` | Explain whether a service can start and what would be preempted. |
+| `/service start <name>` | Start a configured container through `napd`. |
+| `/service stop <name>` | Stop a configured container through `napd`. |
+| `/service restart <name>` | Restart a configured container through `napd`. |
+| `/service logs <name>` | Show recent Docker logs for a service. |
+| `/top` | Return to the dashboard. |
+| `/help` | Print available commands in the output panel. |
+| `/quit` | Leave the TUI. |
+
+## 🧩 How napctl And napd Work Together
+
+![Architecture placeholder](./artifacts/general/img/template.png)
+
+`napctl` is the operator interface. It can run as a classic CLI, a terminal UI,
+or a remote-control client. `napd` is the server-side agent. It runs on the host
+that has Docker, RAM, CPU, GPUs, and the actual Docker containers.
+
+### 1️⃣ Control plane
+
+`napctl` talks to `napd` through one of two control paths:
+
+- Local Unix socket: `/run/nap/napd.sock`.
+- Remote HTTP control API: usually `http://SERVER_IP:8788` with a bearer token.
+
+### 2️⃣ Data plane
+
+Application traffic goes to the Nap gateway, usually `:8787`. The gateway
+chooses the service by `Host` header, wakes the Docker container if needed, waits
+for health, and proxies the request to the internal service target.
+
+### 3️⃣ Resource orchestration
+
+Before starting a service, `napd` inspects host resources. It can account for
+CPU, available RAM, GPU count, GPU vendor, minimum VRAM, GPU utilization, and
+GPU processes attributed to Docker containers.
+
+If a requested service needs resources that are currently held by another idle
+container, Nap can stop the inactive container and start the requested one. It
+protects active HTTP requests, so services with in-flight traffic are not
+preempted for normal switching.
+
+### 4️⃣ Multi-GPU behavior
+
+Multi-GPU hosts are modeled as one node with multiple detected GPUs. Services
+can request GPU count, vendor, minimum VRAM, and explicit GPU indices when
+needed. Nap inspects all GPUs on the host, reports aggregate and per-GPU usage
+in the TUI, and uses the scheduler to decide whether the requested workload can
+start or which inactive workload can be stopped first.
+
+## 🧭 Deployment Scenarios
+
+The same package supports local laptops, home-lab servers, office LAN servers,
+and cloud GPU hosts. The difference is which machines run `napd`, where the
+gateway is exposed, and how `napctl` reaches each node.
+
+### 10.1 🏠 Single Machine Without Reverse Proxy
+
+![Local gateway placeholder](./artifacts/general/img/template.png)
+
+Run both `napctl` and `napd` on one machine. Docker containers, the Nap gateway,
+and the control socket all live on the same host.
+
+#### How it works
+
+- `napctl` controls local `napd` through `/run/nap/napd.sock`.
+- Apps send HTTP requests directly to `http://127.0.0.1:8787`.
+- Requests include `Host: app.nap.local`.
+- `napd` starts the requested Docker container and proxies to its target.
+
+#### Example request
+
+```sh
+curl -H 'Host: app.nap.local' http://127.0.0.1:8787/
+```
+
+### 10.2 🏡 Single Machine With Caddy
+
+![Local reverse proxy placeholder](./artifacts/general/img/template.png)
+
+Run `napctl`, `napd`, Docker, and Caddy on one machine. Caddy owns the public
+URL, while Nap owns wake-on-request and resource orchestration.
+
+#### How it works
+
+- Public traffic reaches Caddy first.
+- Caddy forwards to `127.0.0.1:8787`.
+- Caddy sets `Host` to the matching Nap service host.
+- `napd` wakes the right Docker container and proxies internally.
+
+#### Example proxy target
+
+```caddyfile
+app.example.com {
+	reverse_proxy 127.0.0.1:8787 {
+		header_up Host app.nap.local
+	}
+}
+```
+
+### 10.3 🖧 Local Client And LAN Server
+
+![LAN server placeholder](./artifacts/general/img/template.png)
+
+Run `napctl` on a workstation and `napd` on one or more Docker/GPU servers in
+the same local network.
+
+#### How it works
+
+- The workstation stores remote nodes in its local `nap.yaml`.
+- `napctl` uses the remote control API on port `8788`.
+- The server runs Docker containers, `napd`, the Nap gateway, and optionally
+  Caddy.
+- Local apps can call the server reverse proxy or the Nap gateway directly.
+
+#### Example client node
+
+```yaml
+nodes:
+  gpu-server:
+    type: remote
+    default: true
+    url: http://SERVER_IP:8788
+    token_env: NAP_REMOTE_TOKEN
+```
+
+### 10.4 ☁️ Local Client And Cloud GPU Server
+
+![Cloud GPU server placeholder](./artifacts/general/img/template.png)
+
+Run `napctl` locally and `napd` on a remote cloud server with one or more GPUs.
+This is the same model as the LAN setup, but network security matters more.
+
+#### How it works
+
+- `napctl` connects to the remote control API with a bearer token.
+- The cloud server runs Docker containers, GPUs, `napd`, and a reverse proxy.
+- The reverse proxy exposes public HTTPS routes.
+- Nap gateway traffic should stay behind the reverse proxy when possible.
+
+#### Production guidance
+
+- Use HTTPS in front of public application traffic.
+- Restrict remote control port `8788` to trusted IPs or private networking.
+- Store remote tokens in `/etc/nap/napd.env` on the server.
+- Store client tokens with `napctl node token set <node> --stdin` only on
+  trusted local machines.
+
+## 🤖 Coding Agent Installation
+
+If you want ChatGPT Codex, OpenClaude, OpenCode, Pi, or another coding agent to
+install and configure Nap for you, point it to [AGENTS.md](AGENTS.md). That file
+contains package-manager install commands, role-specific setup rules,
+remote-node configuration, reverse-proxy guidance, and a verification checklist.
+
+## ✅ Verify Release Downloads
 
 Every release includes `checksums.txt`.
 
@@ -596,6 +826,6 @@ Every release includes `checksums.txt`.
 shasum -a 256 -c checksums.txt
 ```
 
-## License
+## 📄 License
 
 Released under the MIT License. See [LICENSE](LICENSE).
