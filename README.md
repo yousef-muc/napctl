@@ -256,6 +256,41 @@ Supported `napd` environment variables:
 | `NAP_REMOTE_TLS_KEY` | `--remote-tls-key` | TLS private key for remote control. |
 | `NAP_LOG_LEVEL` | `--log-level` | `debug`, `info`, `warn`, or `error`. |
 
+## Linux Agent Boot Enablement
+
+The `napctl` package installs both `napctl` and `napd`, but it does not start
+the daemon automatically on every machine. This keeps client-only workstations
+from accidentally running an agent. On Linux machines that should manage Docker
+workloads, enable the service explicitly:
+
+```sh
+sudo usermod -aG docker nap
+sudo usermod -aG nap "$USER"
+sudo systemctl enable --now napd
+```
+
+Verify that the daemon is both running now and enabled for the next boot:
+
+```sh
+systemctl is-active napd
+systemctl is-enabled napd
+sudo systemctl status napd --no-pager -l
+```
+
+Expected output:
+
+```text
+active
+enabled
+```
+
+If `systemctl status napd` shows `disabled` after an install, upgrade, or reboot,
+run this again:
+
+```sh
+sudo systemctl enable --now napd
+```
+
 ## Split Client And Agent Setup
 
 Typical setup:
