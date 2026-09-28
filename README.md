@@ -1,6 +1,6 @@
 # napctl - Container Compute Orchestration
 
-![Hero Image](./artifacts/general/img/hero2.png)
+![Hero Image](./artifacts/general/img/hero3.png)
 
 [![Release](https://img.shields.io/github/v/release/yousef-muc/napctl?label=release)](https://github.com/yousef-muc/napctl/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
