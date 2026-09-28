@@ -454,7 +454,7 @@ napctl node token unset gpu-server
 
 ## 🌐 Reverse Proxy Examples
 
-![Reverse Proxy Architecture](./artifacts/general/img/reverse-proxy.png)
+![Reverse Proxy Architecture](./artifacts/general/img/proxy.png)
 
 
 Put the public reverse proxy in front of the napd gateway, not directly in front
@@ -722,7 +722,7 @@ The same package supports local laptops, home-lab servers, office LAN servers,
 and cloud GPU hosts. The difference is which machines run `napd`, where the
 gateway is exposed, and how `napctl` reaches each node.
 
-### 10.1 🏠 Single Machine Without Reverse Proxy
+### 1. 🏠 Single Machine Without Reverse Proxy
 
 ![Local gateway placeholder](./artifacts/general/img/single.png)
 
@@ -742,7 +742,7 @@ and the control socket all live on the same host.
 curl -H 'Host: app.nap.local' http://127.0.0.1:8787/
 ```
 
-### 10.2 🏡 Single Machine With Caddy
+### 2. 🏡 Single Machine With Caddy
 
 ![Local reverse proxy placeholder](./artifacts/general/img/caddy.png)
 
@@ -766,7 +766,7 @@ app.example.com {
 }
 ```
 
-### 10.3 🖧 Local Client And LAN Server
+### 3. 🖧 Local Client And LAN Server
 
 ![LAN server placeholder](./artifacts/general/img/template.png)
 
@@ -792,7 +792,7 @@ nodes:
     token_env: NAP_REMOTE_TOKEN
 ```
 
-### 10.4 ☁️ Local Client And Cloud GPU Server
+### 4. ☁️ Local Client And Cloud GPU Server
 
 ![Cloud GPU server placeholder](./artifacts/general/img/template.png)
 
