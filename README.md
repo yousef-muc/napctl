@@ -794,7 +794,7 @@ nodes:
 
 ### 4. ☁️ Local Client And Cloud GPU Server
 
-![Cloud GPU server placeholder](./artifacts/general/img/template.png)
+![Cloud GPU server placeholder](./artifacts/general/img/cloud.png)
 
 Run `napctl` locally and `napd` on a remote cloud server with one or more GPUs.
 This is the same model as the LAN setup, but network security matters more.
