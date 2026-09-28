@@ -3,9 +3,9 @@
 `napctl` is the public binary distribution for Nap, a local and edge compute
 orchestrator for Docker workloads.
 
-Nap starts existing Docker containers on demand, waits for health checks,
-proxies HTTP requests, observes host resources, and stops idle services after a
-configured timeout.
+Nap wakes existing Docker containers on request, waits for health checks,
+proxies HTTP traffic, observes CPU/RAM/GPU resources, and shifts workloads
+between containers when resources are needed.
 
 ## Included Binaries
 
@@ -348,6 +348,41 @@ nodes with `n` or `Tab`, and `p` for the previous node. Commands act on the
 currently selected node.
 
 For production, put HTTPS in front of the remote control API or use native TLS.
+
+## Terminal UI
+
+Run `napctl` to open the dashboard. With multiple configured nodes, the right
+side shows all nodes and the selected node drives the services, host metrics,
+and `/` commands.
+
+Global keys:
+
+- `/`: open the command palette.
+- `r`: refresh nodes, services, and host metrics.
+- `n` or `Tab`: select the next node.
+- `p` or `Shift+Tab`: select the previous node.
+- `Enter` or `i`: inspect the selected service.
+- `s`: start the selected service if it is stopped, or stop it if it is running.
+- `x`: restart the selected service.
+- `l`: show logs for the selected service.
+- `q` or `Ctrl+C`: quit.
+
+Command palette commands:
+
+- `/doctor`: validate config and check the selected `napd` agent.
+- `/config validate`: validate the active `nap.yaml` without contacting `napd`.
+- `/host inspect`: show runtime, CPU, RAM, GPU, VRAM, and GPU process details.
+- `/node ls`: list configured nodes from the client config.
+- `/service ls`: refresh services from the selected node.
+- `/service inspect <name>`: show service state, container, target, and resources.
+- `/service plan <name>`: explain whether a service can start and what would be preempted.
+- `/service start <name>`: start a configured container through `napd`.
+- `/service stop <name>`: stop a configured container through `napd`.
+- `/service restart <name>`: restart a configured container through `napd`.
+- `/service logs <name>`: show recent Docker logs for a service.
+- `/top`: return to the dashboard.
+- `/help`: print the available palette commands in the output panel.
+- `/quit`: leave the TUI.
 
 ## Gateway Requests
 
