@@ -431,6 +431,163 @@ When the request arrives, `napd` checks resources, starts the configured
 container if needed, waits for the healthcheck, then proxies the request to the
 configured target.
 
+## Reverse Proxy Examples
+
+Put your public reverse proxy in front of the Nap gateway, not directly in
+front of the container port. The proxy must send a `Host` header that matches a
+service `host` entry in `nap.yaml`.
+
+Example service:
+
+```yaml
+services:
+  app:
+    host: app.nap.local
+    container: app
+    target: http://127.0.0.1:8080
+```
+
+Host-based routing keeps the original URL simple. Configure the public hostname
+as the service `host`, or override the upstream `Host` header to the internal
+Nap service host.
+
+Path-based routing also works. In that case, strip the public path prefix before
+proxying to Nap and set `Host` to the service host.
+
+### Caddy
+
+Host-based:
+
+```caddyfile
+app.example.com {
+	reverse_proxy 127.0.0.1:8787 {
+		header_up Host app.nap.local
+	}
+}
+```
+
+Path-based:
+
+```caddyfile
+example.com {
+	handle_path /flux/* {
+		reverse_proxy 127.0.0.1:8787 {
+			header_up Host flux.nap.local
+		}
+	}
+
+	handle_path /qwen/* {
+		reverse_proxy 127.0.0.1:8787 {
+			header_up Host qwen.nap.local
+		}
+	}
+}
+```
+
+`handle_path` strips `/flux` or `/qwen` before the request reaches Nap. This is
+useful when the container expects requests at `/`.
+
+### nginx
+
+Host-based:
+
+```nginx
+server {
+    listen 80;
+    server_name app.example.com;
+
+    location / {
+        proxy_set_header Host app.nap.local;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:8787;
+    }
+}
+```
+
+Path-based:
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+
+    location /flux/ {
+        rewrite ^/flux/?(.*)$ /$1 break;
+        proxy_set_header Host flux.nap.local;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:8787;
+    }
+
+    location /qwen/ {
+        rewrite ^/qwen/?(.*)$ /$1 break;
+        proxy_set_header Host qwen.nap.local;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:8787;
+    }
+}
+```
+
+Reload nginx after validation:
+
+```sh
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### Apache
+
+Enable the required modules once:
+
+```sh
+sudo a2enmod proxy proxy_http headers rewrite
+sudo systemctl reload apache2
+```
+
+Host-based:
+
+```apache
+<VirtualHost *:80>
+    ServerName app.example.com
+
+    RequestHeader set Host "app.nap.local"
+    ProxyPass "/" "http://127.0.0.1:8787/"
+    ProxyPassReverse "/" "http://127.0.0.1:8787/"
+</VirtualHost>
+```
+
+Path-based:
+
+```apache
+<VirtualHost *:80>
+    ServerName example.com
+
+    <Location "/flux/">
+        RequestHeader set Host "flux.nap.local"
+        ProxyPass "http://127.0.0.1:8787/"
+        ProxyPassReverse "http://127.0.0.1:8787/"
+    </Location>
+
+    <Location "/qwen/">
+        RequestHeader set Host "qwen.nap.local"
+        ProxyPass "http://127.0.0.1:8787/"
+        ProxyPassReverse "http://127.0.0.1:8787/"
+    </Location>
+</VirtualHost>
+```
+
+Reload Apache after validation:
+
+```sh
+sudo apachectl configtest
+sudo systemctl reload apache2
+```
+
 ## Verify Release Downloads
 
 Every release includes `checksums.txt`.
