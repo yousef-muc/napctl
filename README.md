@@ -744,7 +744,7 @@ curl -H 'Host: app.nap.local' http://127.0.0.1:8787/
 
 ### 10.2 🏡 Single Machine With Caddy
 
-![Local reverse proxy placeholder](./artifacts/general/img/template.png)
+![Local reverse proxy placeholder](./artifacts/general/img/caddy.png)
 
 Run `napctl`, `napd`, Docker, and Caddy on one machine. Caddy owns the public
 URL, while Nap owns wake-on-request and resource orchestration.
