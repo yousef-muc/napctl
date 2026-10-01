@@ -474,6 +474,22 @@ services:
 Host-based routing keeps the original URL simple. Path-based routing also works
 when the proxy strips the public path prefix before forwarding to Nap.
 
+### 🔌 WebSockets And Protocol Upgrades
+
+The napd gateway supports WebSocket and HTTP protocol upgrades. This is
+required by applications that keep a live connection open for progress,
+events, queues, or interactive browser sessions. The reverse proxy in front of
+napd must preserve the client's upgrade request.
+
+- Caddy handles WebSocket upgrades automatically with `reverse_proxy`.
+- nginx must use HTTP/1.1 and forward the `Upgrade` and `Connection` headers.
+- Apache should enable `proxy_wstunnel` in addition to `proxy` and
+  `proxy_http`.
+
+Keep traffic routed through napd instead of bypassing it for WebSocket paths.
+The WebSocket connection then counts as active service traffic, preventing idle
+shutdown while the connection remains open.
+
 ### 🟣 Caddy
 
 #### 1️⃣ Host-based
@@ -513,6 +529,16 @@ sudo systemctl reload caddy
 
 ### 🟢 nginx
 
+Define this map once in nginx's `http` context so normal HTTP connections and
+WebSocket upgrades receive the correct `Connection` header:
+
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+```
+
 #### 1️⃣ Host-based
 
 ```nginx
@@ -521,6 +547,9 @@ server {
     server_name app.example.com;
 
     location / {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
         proxy_set_header Host app.nap.local;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -539,6 +568,9 @@ server {
 
     location /flux/ {
         rewrite ^/flux/?(.*)$ /$1 break;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
         proxy_set_header Host flux.nap.local;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -548,6 +580,9 @@ server {
 
     location /qwen/ {
         rewrite ^/qwen/?(.*)$ /$1 break;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
         proxy_set_header Host qwen.nap.local;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -569,7 +604,7 @@ sudo systemctl reload nginx
 #### 1️⃣ Enable modules
 
 ```sh
-sudo a2enmod proxy proxy_http headers rewrite
+sudo a2enmod proxy proxy_http proxy_wstunnel headers rewrite
 sudo systemctl reload apache2
 ```
 
@@ -610,6 +645,103 @@ sudo systemctl reload apache2
 ```sh
 sudo apachectl configtest
 sudo systemctl reload apache2
+```
+
+### 🎨 ComfyUI And WebSockets
+
+ComfyUI uses WebSockets for live execution progress and queue updates. Its
+browser interface also loads many JavaScript modules and API routes in
+parallel. Route all of these requests through the same napd service so
+wake-on-request, activity tracking, and idle shutdown continue to work.
+
+Dedicated host-based routing is recommended for ComfyUI. It preserves root
+paths such as `/ws`, `/api`, `/view`, and `/assets` without additional rewrite
+rules.
+
+#### 1️⃣ Configure the napd service
+
+The example assumes the existing ComfyUI container listens on host port `8188`:
+
+```yaml
+services:
+  comfyui:
+    host: comfyui.nap.local
+    container: comfyui
+    target: http://127.0.0.1:8188
+    healthcheck:
+      url: http://127.0.0.1:8188/
+      timeout: 180s
+      interval: 2s
+    resources:
+      memory: 16GiB
+      gpus:
+        count: 1
+        vendor: nvidia
+        min_vram: 12GiB
+    idle: 10m
+    stop_timeout: 45s
+```
+
+Adjust the resource values to the workflows and models used by this ComfyUI
+instance. Validate the configuration and restart napd after editing it:
+
+```sh
+sudo napctl --config /etc/nap/nap.yaml config validate
+sudo systemctl restart napd
+```
+
+#### 2️⃣ Caddy configuration
+
+Caddy forwards ordinary HTTP requests and WebSocket upgrades automatically:
+
+```caddyfile
+comfy.example.com {
+	reverse_proxy 127.0.0.1:8787 {
+		header_up Host comfyui.nap.local
+	}
+}
+```
+
+#### 3️⃣ nginx configuration
+
+nginx needs the WebSocket upgrade headers explicitly:
+
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 80;
+    server_name comfy.example.com;
+
+    location / {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host comfyui.nap.local;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_pass http://127.0.0.1:8787;
+    }
+}
+```
+
+#### 4️⃣ Verify the route
+
+Open the public ComfyUI host in a browser and confirm that the interface,
+preview updates, queue events, and execution progress work. The browser's
+network inspector should show the WebSocket request with status `101 Switching
+Protocols`.
+
+For a local gateway check without the external reverse proxy:
+
+```sh
+curl -v -H 'Host: comfyui.nap.local' http://127.0.0.1:8787/
 ```
 
 ## 🚪 Gateway Requests
