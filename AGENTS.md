@@ -213,6 +213,8 @@ gateway:
 services:
   app:
     host: app.nap.local
+    # Optional Host header presented to the upstream application.
+    # upstream_host: app.example.com
     container: app
     target: http://127.0.0.1:8080
     healthcheck:
@@ -226,8 +228,19 @@ services:
         vendor: nvidia
         min_vram: 8GiB
     idle: 5m
+    idle_shutdown: true
     stop_timeout: 30s
 ```
+
+Keep `host` as the gateway routing identity. For browser applications that
+validate Host against Origin, set optional `upstream_host` to the exact public
+host opened by the browser, without a URL scheme. Omitted `upstream_host`
+preserves the existing Host behavior.
+
+`idle_shutdown` defaults to `true`. Set it to `false` only when the user wants
+to disable time-based idle stopping. It does not make the service
+non-preemptible when an inactive container holds resources required by another
+workload.
 
 Apply:
 

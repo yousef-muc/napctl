@@ -280,6 +280,8 @@ gateway:
 services:
   app:
     host: app.nap.local
+    # Optional Host header presented to the upstream application.
+    # upstream_host: app.example.com
     container: app
     target: http://127.0.0.1:8080
     healthcheck:
@@ -293,6 +295,7 @@ services:
         vendor: nvidia
         min_vram: 8GiB
     idle: 5m
+    idle_shutdown: true
     stop_timeout: 30s
 ```
 
@@ -306,6 +309,7 @@ services:
 | `nodes` | Client-style node definitions. On an agent host this usually contains `local`. |
 | `gateway.listen` | HTTP gateway address. Public reverse proxies should point here. |
 | `services.<name>.host` | Host header that selects the service at the gateway. |
+| `services.<name>.upstream_host` | Optional Host header presented to the upstream application. Routing still uses `host`. |
 | `services.<name>.container` | Existing Docker container name. |
 | `services.<name>.target` | Internal URL to proxy to after the container is healthy. |
 | `healthcheck.url` | URL Nap waits for before proxying traffic. |
@@ -314,7 +318,13 @@ services:
 | `resources.gpus.vendor` | GPU vendor selector, for example `nvidia`. |
 | `resources.gpus.min_vram` | Minimum VRAM requirement. |
 | `idle` | Time after which an inactive service can be stopped. |
+| `idle_shutdown` | Enables time-based idle shutdown. Defaults to `true`; `false` does not disable resource preemption. |
 | `stop_timeout` | Grace period for stopping the Docker container. |
+
+`upstream_host` separates Nap's internal routing host from the host seen by an
+origin-sensitive application. Existing configurations that omit it keep the
+previous behavior. Likewise, `idle_shutdown` is optional and defaults to
+`true`, so upgrades do not change existing shutdown behavior.
 
 #### 4️⃣ Apply daemon config changes
 
@@ -666,6 +676,7 @@ The example assumes the existing ComfyUI container listens on host port `8188`:
 services:
   comfyui:
     host: comfyui.nap.local
+    upstream_host: comfy.example.com
     container: comfyui
     target: http://127.0.0.1:8188
     healthcheck:
@@ -679,11 +690,22 @@ services:
         vendor: nvidia
         min_vram: 12GiB
     idle: 10m
+    idle_shutdown: true
     stop_timeout: 45s
 ```
 
 Adjust the resource values to the workflows and models used by this ComfyUI
-instance. Validate the configuration and restart napd after editing it:
+instance. Set `upstream_host` to the exact host, including a non-default port
+when present but without `http://` or `https://`, that users open in their
+browsers. ComfyUI then sees a Host value that matches the browser Origin instead
+of Nap's internal routing host. This also avoids DNS lookups for private
+`*.nap.local` names inside the container.
+
+To disable only ComfyUI's time-based idle shutdown, set
+`idle_shutdown: false`. The service can still be stopped as an inactive
+resource-preemption candidate when another workload needs its GPU or memory.
+
+Validate the configuration and restart napd after editing it:
 
 ```sh
 sudo napctl --config /etc/nap/nap.yaml config validate
